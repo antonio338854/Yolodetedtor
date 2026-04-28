@@ -10,15 +10,13 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Instalar dependências do sistema
+      - name: Instalar dependências
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -28,10 +26,17 @@ jobs:
             libtinfo5 cmake libffi-dev libssl-dev \
             build-essential ccache
 
-      - name: Instalar Buildozer e Cython
+      - name: Instalar Buildozer
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
+
+      - name: Aceitar licenças Android
+        run: |
+          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          yes | sdkmanager --licenses || true
 
       - name: Baixar modelo YOLO
         run: |
@@ -39,8 +44,7 @@ jobs:
           wget -q https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3-tiny.cfg -O yolov3-tiny.cfg
           wget -q https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O coco.names
 
-      - name: Cache Buildozer
-        uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.buildozer
@@ -50,10 +54,9 @@ jobs:
 
       - name: Build APK
         run: |
-          buildozer android debug 2>&1 | tail -50
+          yes | buildozer android debug 2>&1 | tail -80
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: yolo-detector-apk
           path: bin/*.apk
